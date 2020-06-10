@@ -8,11 +8,11 @@ function dd()
     die();
 }
 
-class sdkTest extends PHPUnit_Framework_TestCase
+class sdkTest extends PHPUnit\Framework\TestCase
 {
     protected $sdk;
 
-    public function setUp()
+    protected function setUp(): void
     {
         $this->sdk = new UfileSdk('YourBucket', 'YourPublicKey', 'YourSecretKey');
     }
@@ -48,9 +48,9 @@ class sdkTest extends PHPUnit_Framework_TestCase
         $this->assertEquals($size, 14);
     }
 
-    public function testPrefixFileList()
+    public function testList()
     {
-        list($ret, $code) = $this->sdk->prefixFileList();
+        list($ret, $code) = $this->sdk->list();
         $this->assertEquals($code, 200);
     }
 

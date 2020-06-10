@@ -74,8 +74,7 @@ class UfileSdk
 
     public function put($key_name, $contents, $headers = array())
     {
-        $headers = [];
-        $resp = $this->httpClient->request('PUT', $key_name, [
+        $resp = $this->httpClient->put($key_name, [
             'headers' => $headers,
             'body' => $contents
         ]);
@@ -84,7 +83,7 @@ class UfileSdk
 
     public function putFile($key_name, $filePath, $headers = array())
     {
-        $resp = $this->httpClient->request('PUT', $key_name, [
+        $resp = $this->httpClient->put($key_name, [
             'headers' => $headers,
             'body' => fopen($filePath, 'r')
         ]);
@@ -147,9 +146,79 @@ class UfileSdk
         return $meta;
     }
 
-    public function prefixFileList($prefix = null, $marker = null, $limit = null)
+    public function list($prefix = null, $marker = null, $limit = null)
     {
         $uri = '/?list';
+        if ($prefix) {
+            $uri .= '&prefix=' . $prefix;
+        }
+        if ($marker) {
+            $uri .= '&marker=' . $marker;
+        }
+        if ($limit) {
+            $uri .= '&limit=' . $limit;
+        }
+        $resp = $this->httpClient->get($uri);
+        return [$resp->getBody()->getContents(), $resp->getStatusCode()];
+    }
+
+    /**
+     * 初始化分片
+     *
+     * @param string $key_name
+     * @param array  $headers
+     * @return array [responseStr, httpCode]
+     */
+    public function initParts($key_name, $headers = array())
+    {
+        // https://docs.ucloud.cn/api/ufile-api/initiate_multipart_upload
+        $resp = $this->httpClient->post($key_name . '?uploads', [
+            'headers' => $headers,
+        ]);
+        return [$resp->getBody()->getContents(), $resp->getStatusCode()];
+    }
+
+    public function uploadPart($key_name, $uploadId, $partNumber, $contents, $headers = array())
+    {
+        // https://docs.ucloud.cn/api/ufile-api/upload_part
+        $headers['Content-Type'] = 'application/octet-stream';
+        $headers['Content-Length'] = strlen($contents);
+        $resp = $this->httpClient->post($key_name . '?upoloadId=' . $uploadId . '&partNumber=' . $partNumber, [
+            'headers' => $headers,
+            'body' => $contents
+        ]);
+        return [$resp->getBody()->getContents(), $resp->getStatusCode()];
+    }
+
+    public function finishParts($key_name, $uploadId, $newKey, $contents = '', $headers = array())
+    {
+        // https://docs.ucloud.cn/api/ufile-api/finish_multipart_upload
+        $headers['Content-Length'] = strlen($contents);
+        $resp = $this->httpClient->post($key_name . '?upoloadId=' . $uploadId . '&newKey=' . $newKey, [
+            'headers' => $headers,
+            'body' => $contents
+        ]);
+        return [$resp->getBody()->getContents(), $resp->getStatusCode()];
+    }
+
+    public function deleteParts($key_name, $uploadId)
+    {
+        // https://docs.ucloud.cn/api/ufile-api/abort_multipart_upload
+        $resp = $this->httpClient->delete($key_name . '?upoloadId=' . $uploadId);
+        return [$resp->getBody()->getContents(), $resp->getStatusCode()];
+    }
+
+    public function getParts($uploadId)
+    {
+        // https://docs.ucloud.cn/api/ufile-api/get_multi_upload_part
+        $resp = $this->httpClient->get('/?muploadpart&uploadId=' . $uploadId);
+        return [$resp->getBody()->getContents(), $resp->getStatusCode()];
+    }
+
+    public function getAllPatrs($prefix = null, $marker = null, $limit = null)
+    {
+        // https://docs.ucloud.cn/api/ufile-api/get_multi_upload_id
+        $uri = '/?muploadid';
         if ($prefix) {
             $uri .= '&prefix=' . $prefix;
         }

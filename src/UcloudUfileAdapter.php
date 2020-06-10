@@ -3,6 +3,7 @@
 namespace Jekhy\UcloudUfileStorage;
 
 use League\Flysystem\Adapter\AbstractAdapter;
+use League\Flysystem\Adapter\CanOverwriteFiles;
 use League\Flysystem\Adapter\Polyfill\NotSupportingVisibilityTrait;
 use League\Flysystem\Adapter\Polyfill\StreamedCopyTrait;
 use League\Flysystem\Adapter\Polyfill\StreamedTrait;
@@ -10,7 +11,7 @@ use League\Flysystem\Config;
 use LogicException;
 use Exception;
 
-class UcloudUfileAdapter extends AbstractAdapter
+class UcloudUfileAdapter extends AbstractAdapter implements CanOverwriteFiles
 {
     use NotSupportingVisibilityTrait, StreamedTrait, StreamedCopyTrait;
     protected $ufileSdk;
@@ -20,6 +21,11 @@ class UcloudUfileAdapter extends AbstractAdapter
         $this->ufileSdk = new UfileSdk($bucket, $public_key, $secret_key, $suffix, $https);
 
         $this->setPathPrefix($pathPrefix);
+    }
+
+    public function getSDK()
+    {
+        return $this->ufileSdk;
     }
 
     public function read($path)
